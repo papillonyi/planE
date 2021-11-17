@@ -110,24 +110,25 @@ def run(access_key_id, access_key_secret, security_group_id, region_id="cn-shang
             permissions = get_security_group(security_group_id, send_request_function)[
                 "Permissions"
             ]["Permission"]
-            home_permission = next(
-                filter(lambda x: x["Description"] == "home", permissions)
-            )
 
-            if local_ip == home_permission["SourceCidrIp"]:
-                logging.info(
-                    f"local ip {local_ip} equal to source cider ip {home_permission['SourceCidrIp']}"
-                )
-            else:
-                logging.info(
-                    f"local ip {local_ip} not equal to source cider ip {home_permission['SourceCidrIp']}"
-                )
-                rm_security_group_rule(
-                    home_permission, security_group_id, send_request_function
-                )
-                add_security_group_rule(
-                    home_permission, local_ip, security_group_id, send_request_function
-                )
+            for permission in permissions:
+                if permission["Description"] != "home":
+                    continue
+
+                if local_ip == permission["SourceCidrIp"]:
+                    logging.info(
+                        f"local ip {local_ip} equal to source cider ip {permission['SourceCidrIp']}"
+                    )
+                else:
+                    logging.info(
+                        f"local ip {local_ip} not equal to source cider ip {permission['SourceCidrIp']}"
+                    )
+                    rm_security_group_rule(
+                        permission, security_group_id, send_request_function
+                    )
+                    add_security_group_rule(
+                        permission, local_ip, security_group_id, send_request_function
+                    )
         except Exception as E:
             logging.error(f"{E}, will restart in 60*10 s")
             time.sleep(60 * 10)
