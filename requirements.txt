@@ -1,0 +1,4 @@
+aliyun_python_sdk_core==2.13.36
+aliyun_python_sdk_ecs==4.24.13
+argh==0.26.2
+requests==2.25.1
