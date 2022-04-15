@@ -1,11 +1,13 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/spf13/viper"
 	"github.com/xjh22222228/ip"
 	"log"
+	"time"
 )
 
 type Access struct {
@@ -18,11 +20,14 @@ type Config struct {
 	RegionId        string
 	SecurityGroupId string
 	Description     string
+	SleepTime       int
 }
 
 func main() {
-	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
+	configFile := flag.String("config", "config.yml", "config file")
+	flag.Parse()
+
+	viper.SetConfigFile(*configFile)
 	var configuration Config
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -35,27 +40,35 @@ func main() {
 	log.Printf("key is %s", configuration.Access.Key)
 	log.Printf("secret is %s", configuration.Access.Secret)
 
+	for {
+		run(configuration)
+		log.Printf("done, will be called  %dmin late", configuration.SleepTime)
+		time.Sleep(time.Duration(configuration.SleepTime) * time.Minute)
+	}
+
+}
+
+func run(config Config) {
 	outboundIP, err := getOutboundIP()
 	if err != nil {
 		return
 	}
 	log.Printf("local ip is  %s", outboundIP)
 
-	permissions, err := getPermission(configuration)
+	permissions, err := getPermission(config)
 	if err != nil {
 		return
 	}
-	filteredPermissions, err := filterPermissionsByDescription(permissions, configuration)
+	filteredPermissions, err := filterPermissionsByDescription(permissions, config)
 	if err != nil {
 		return
 	}
 	for _, permission := range filteredPermissions {
-		err := handlePermission(permission, configuration, outboundIP)
+		err := handlePermission(permission, config, outboundIP)
 		if err != nil {
 			return
 		}
 	}
-
 }
 
 func getOutboundIP() (string, error) {
@@ -72,6 +85,8 @@ func handlePermission(permission ecs.Permission, config Config, localIp string) 
 		if err != nil {
 			return
 		}
+	} else {
+		fmt.Printf("permission %s don't need to change \n", permission.Description)
 	}
 	return
 }
@@ -99,7 +114,7 @@ func getPermission(config Config) (ecs.Permissions, error) {
 		// 异常处理
 		return ecs.Permissions{}, err
 	}
-	fmt.Printf("success(%d)! instanceId = %s\n", response.GetHttpStatus(), response.Permissions)
+	fmt.Printf("success(%d)! \n", response.GetHttpStatus())
 	return response.Permissions, nil
 }
 

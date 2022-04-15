@@ -1,3 +1,7 @@
-aliyun:
-  key: "test"
-  secret: "haha"
+access:
+  key: "xx"
+  secret: "xx"
+regionId: "cn-shanghai"
+securityGroupId: "xx"
+description: "xx"
+sleepTime: 5
