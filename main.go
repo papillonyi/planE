@@ -51,21 +51,28 @@ func main() {
 func run(config Config) {
 	outboundIP, err := getOutboundIP()
 	if err != nil {
+		fmt.Printf("failed to get outbound ip %s \n", err)
 		return
 	}
 	log.Printf("local ip is  %s", outboundIP)
 
 	permissions, err := getPermission(config)
 	if err != nil {
+		fmt.Printf("failed to get permissions %s \n", err)
 		return
 	}
 	filteredPermissions, err := filterPermissionsByDescription(permissions, config)
 	if err != nil {
+		fmt.Printf("failed to get filtered permissions %s \n", err)
 		return
 	}
+
+	fmt.Printf("%d permissions may need to upate \n", len(filteredPermissions))
 	for _, permission := range filteredPermissions {
 		err := handlePermission(permission, config, outboundIP)
 		if err != nil {
+			fmt.Printf("failed to handle permission permissions %s \n", err)
+
 			return
 		}
 	}
@@ -79,12 +86,15 @@ func handlePermission(permission ecs.Permission, config Config, localIp string) 
 	if permission.SourceCidrIp != localIp {
 		err = rmSecurityGroupPermission(permission, config)
 		if err != nil {
+			fmt.Printf("failed to rm security group permission %s \n", err)
 			return
 		}
 		err = addSecurityGroupPermission(permission, config, localIp)
 		if err != nil {
+			fmt.Printf("failed to add security group permission %s \n", err)
 			return
 		}
+		fmt.Printf("permission %s has been changed \n", permission.Description)
 	} else {
 		fmt.Printf("permission %s don't need to change \n", permission.Description)
 	}
@@ -100,7 +110,6 @@ func filterPermissionsByDescription(permissions ecs.Permissions, config Config) 
 	return
 }
 
-//
 func getPermission(config Config) (ecs.Permissions, error) {
 	client, err := ecs.NewClientWithAccessKey(config.RegionId, config.Access.Key, config.Access.Secret)
 	if err != nil {
